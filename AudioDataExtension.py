@@ -11,6 +11,16 @@ def encode_16bits(data) :
         data = data.astype(np.int16)
     return data
 
+def time_stretch(data, speed):
+    reader = ArrayReader(data)
+    writer = ArrayWriter(channels=1)
+    tsm = wsola(channels=1, speed=speed)
+    tsm.run(reader, writer)
+
+    output = np.ascontiguousarray(writer.data.T)
+    output = encode_16bits(output)
+
+    return output
 
 def AudioRead(path):
     fs, data = wavfile.read(path)
@@ -20,17 +30,9 @@ def AudioRead(path):
 def main():
     AudioPath = "./data/wav/31/f0002/20150211152959223_f0002_31.wav"
     data, fs = AudioRead(AudioPath)
-
     data = data[:].reshape(1, -1)
 
-    # Run the TSM procedure
-    reader = ArrayReader(data)
-    writer = ArrayWriter(channels=1)
-    tsm = wsola(channels=1, speed=0.5)
-    tsm.run(reader, writer)
-
-    output = np.ascontiguousarray(writer.data.T)
-    output = encode_16bits(output)
+    output = time_stretch(data, 0.5)
     wavfile.write("output.wav", fs, output)
 
 
