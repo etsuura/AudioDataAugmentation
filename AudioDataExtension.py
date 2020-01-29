@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.io import wavfile
-# import sounddevice as sd
+import librosa
 from audiotsm import wsola
 from audiotsm.io.array import ArrayReader, ArrayWriter
 
@@ -21,6 +21,45 @@ def time_stretch(data, speed):
     output = encode_16bits(output)
 
     return output
+
+# Todo Read this function
+def fix_length(data, size, axis=-1, **kwargs):
+    kwargs.setdefault('mode', 'constant')
+
+    n = data.shape[axis]
+
+    if n > size:
+        slices = [slice(None)] * data.ndim
+        slices[axis] = slice(0, size)
+        return data[tuple(slices)]
+
+    elif n < size:
+        lengths = [(0, 0)] * data.ndim
+        lengths[axis] = (0, size - n)
+        return np.pad(data, lengths, **kwargs)
+
+    return data
+
+def pitch_shift(data, fs, pitch_factor):
+    return librosa.effects.pitch_shift(data, fs, pitch_factor)
+
+def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
+    #Todo use assert
+    # if bins_per_octave < 1 or not np.issubdtype(type(bins_per_octave), np.integer):
+        # raise ParameterError('bins_per_octave must be a positive integer.')
+
+
+    rate = 2.0 ** (-float(n_steps) / bins_per_octave)
+
+    # Stretch in time, then resample
+    # Todo Research resample
+    y_shift = librosa.core.resample(time_stretch(data, rate), float(fs)/rate, fs, res_type='kaiser_best')
+
+    #
+    # Crop to the same dimension as the input
+    return fix_length(y_shift, len(data))
+
+
 
 def AudioRead(path):
     fs, data = wavfile.read(path)
