@@ -5,7 +5,7 @@ from audiotsm import wsola
 from audiotsm.io.array import ArrayReader, ArrayWriter
 
 def encode_16bits(data) :
-    # Todo check
+    # Todo check this function
     if (np.max(np.abs(data)) < 1.0):
         data = np.clip(data * 2**15, -2**15, 2**15 - 1).astype(np.int16)
     else:
@@ -27,7 +27,7 @@ def time_stretch(data, speed):
 
     return output
 
-# Todo Read this function
+# Function to specify the size of ndarray by cutting or zero padding
 def fix_length(data, size, axis=-1, **kwargs):
     kwargs.setdefault('mode', 'constant')
 
@@ -52,13 +52,16 @@ def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
     assert not(bins_per_octave < 1 or not np.issubdtype(type(bins_per_octave), np.integer)), \
         'bins_per_octave must be a positive integer.'
 
+    # Todo data encode to 32bits float
+
     rate = 2.0 ** (-float(n_steps) / bins_per_octave)
 
     # Stretch in time, then resample
     # Todo Research resample
+    # y_shift = librosa.core.resample(librosa.effects.time_stretch(data, rate), float(fs)/rate, fs, res_type='kaiser_best')
     y_shift = librosa.core.resample(time_stretch(data, rate), float(fs)/rate, fs, res_type='kaiser_best')
 
-    #
+
     # Crop to the same dimension as the input
     return fix_length(y_shift, len(data))
 
@@ -73,8 +76,12 @@ def main():
     AudioPath = "./data/RedDot/35/m0022/20150325233545661_m0022_35.wav"
     data, fs = AudioRead(AudioPath)
 
-    output = time_stretch(data, 0.5)
-    wavfile.write("output.wav", fs, output)
+    time_stretch_output = time_stretch(data, 0.8)
+    #pitch_shift_output = pitch_shift_wsola(data, fs, 12)
+
+    wavfile.write("time_stretch_output.wav", fs, time_stretch_output)
+    #wavfile.write("pitch_shift_output.wav", fs, pitch_shift_output)
+
 
 
 if __name__ == '__main__':
