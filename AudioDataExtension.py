@@ -5,6 +5,7 @@ from audiotsm import wsola
 from audiotsm.io.array import ArrayReader, ArrayWriter
 
 def encode_16bits(data) :
+    # Todo check
     if (np.max(np.abs(data)) < 1.0):
         data = np.clip(data * 2**15, -2**15, 2**15 - 1).astype(np.int16)
     else:
@@ -12,6 +13,8 @@ def encode_16bits(data) :
     return data
 
 def time_stretch(data, speed):
+    data = data[:].reshape(1, -1)
+
     reader = ArrayReader(data)
     writer = ArrayWriter(channels=1)
     tsm = wsola(channels=1, speed=speed)
@@ -19,6 +22,8 @@ def time_stretch(data, speed):
 
     output = np.ascontiguousarray(writer.data.T)
     output = encode_16bits(output)
+
+    output = output.flatten()
 
     return output
 
@@ -44,10 +49,8 @@ def pitch_shift(data, fs, pitch_factor):
     return librosa.effects.pitch_shift(data, fs, pitch_factor)
 
 def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
-    #Todo use assert
-    # if bins_per_octave < 1 or not np.issubdtype(type(bins_per_octave), np.integer):
-        # raise ParameterError('bins_per_octave must be a positive integer.')
-
+    assert not(bins_per_octave < 1 or not np.issubdtype(type(bins_per_octave), np.integer)), \
+        'bins_per_octave must be a positive integer.'
 
     rate = 2.0 ** (-float(n_steps) / bins_per_octave)
 
@@ -67,9 +70,8 @@ def AudioRead(path):
     return data, fs
 
 def main():
-    AudioPath = "./data/wav/31/f0002/20150211152959223_f0002_31.wav"
+    AudioPath = "./data/RedDot/35/m0022/20150325233545661_m0022_35.wav"
     data, fs = AudioRead(AudioPath)
-    data = data[:].reshape(1, -1)
 
     output = time_stretch(data, 0.5)
     wavfile.write("output.wav", fs, output)
