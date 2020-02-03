@@ -4,6 +4,8 @@ import librosa
 from audiotsm import wsola
 from audiotsm.io.array import ArrayReader, ArrayWriter
 
+# 後の方針 扱うデータは常にfloat32, 入出力時に型変換を行う
+
 def encode_32to16bits(data):
     # Todo check this function
     assert data.dtype == "float32", "input data is not 32bits"
@@ -24,7 +26,11 @@ def encode_16to32bits(data):
         data = data.astype(np.float32)
     return data
 
-def time_stretch(data, speed):
+def time_stretch(data, speed, encode="False"):
+    # Todo use assert
+    if data.dtype == "int16":
+        data = encode_16to32bits(data)
+
     data = data[:].reshape(1, -1)
 
     reader = ArrayReader(data)
@@ -33,9 +39,9 @@ def time_stretch(data, speed):
     tsm.run(reader, writer)
 
     output = np.ascontiguousarray(writer.data.T)
-    output = encode_32to16bits(output)  #必要？
-
     output = output.flatten()
+    if encode == True:
+        output = encode_32to16bits(output)
 
     return output
 
@@ -64,7 +70,9 @@ def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
     assert not(bins_per_octave < 1 or not np.issubdtype(type(bins_per_octave), np.integer)), \
         'bins_per_octave must be a positive integer.'
 
-    # Todo data encode to 32bits float
+    # use assert
+    if data.dtype == "int16":
+        data = encode_16to32bits(data)
 
     rate = 2.0 ** (-float(n_steps) / bins_per_octave)
 
@@ -73,7 +81,6 @@ def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
     # y_shift = librosa.core.resample(librosa.effects.time_stretch(data, rate), float(fs)/rate, fs, res_type='kaiser_best')
     y_shift = librosa.core.resample(time_stretch(data, rate), float(fs)/rate, fs, res_type='kaiser_best')
 
-
     # Crop to the same dimension as the input
     return fix_length(y_shift, len(data))
 
@@ -81,6 +88,7 @@ def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
 
 def AudioRead(path):
     fs, data = wavfile.read(path)
+    data = encode_16to32bits(data)
     # data = data.astype(np.float)
     return data, fs
 
@@ -88,10 +96,12 @@ def main():
     AudioPath = "./data/RedDot/35/m0022/20150325233545661_m0022_35.wav"
     data, fs = AudioRead(AudioPath)
 
-    time_stretch_output = time_stretch(data, 0.8)
+    time_stretch_output = time_stretch(data, 0.5)
     wavfile.write("time_stretch_output.wav", fs, time_stretch_output)
 
-
+    pitch_shift_output = pitch_shift_wsola(data, fs, 12)
+    pitch_shift_output = encode_32to16bits(pitch_shift_output)
+    wavfile.write("pitch_shift_output.wav", fs, pitch_shift_output)
 
 if __name__ == '__main__':
     main()
