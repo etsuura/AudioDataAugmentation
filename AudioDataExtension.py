@@ -1,15 +1,15 @@
-import numpy as np
-from scipy.io import wavfile
-import librosa
 from audiotsm import wsola
 from audiotsm.io.array import ArrayReader, ArrayWriter
+import librosa
+import numpy as np
+import pysptk
+import pyworld as pw
 
 import utility
 
-# 後の方針 扱うデータは常にfloat32, 入出力時に型変換を行う
+# 扱うデータの方針：扱うデータは常にfloat32, 入出力時に型変換を行う
 
 def time_stretch(data, speed):
-    # Todo use assert
     assert data.dtype == "float32", "data type error"
 
     data = data[:].reshape(1, -1)
@@ -60,6 +60,13 @@ def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
     # Crop to the same dimension as the input
     return fix_length(y_shift, len(data))
 
+# def frame_shift(data, fs):
+#     default_frame_period = 5.0
+#     # default_f0_floor = 71.0
+#     # default_f0_ceil = 800.0
+#
+#     return shift_data
+
 def main():
     AudioPath = "./data/RedDot/35/m0022/20150325233545661_m0022_35.wav"
     data, fs = utility.AudioRead(AudioPath)
@@ -67,7 +74,7 @@ def main():
     time_stretch_output = time_stretch(data, 0.5)
     utility.AudioWrite(time_stretch_output, fs, "time_stretch_output.wav")
 
-    pitch_shift_output = pitch_shift_wsola(data, fs, 12)
+    pitch_shift_output = pitch_shift_wsola(data, fs, 2)
     utility.AudioWrite(pitch_shift_output, fs, "pitch_shift_output.wav")
 
 if __name__ == '__main__':
