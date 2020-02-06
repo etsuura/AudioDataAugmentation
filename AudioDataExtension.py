@@ -60,22 +60,38 @@ def pitch_shift_wsola(data, fs, n_steps, bins_per_octave=12):
     # Crop to the same dimension as the input
     return fix_length(y_shift, len(data))
 
-# def frame_shift(data, fs):
-#     default_frame_period = 5.0
-#     # default_f0_floor = 71.0
-#     # default_f0_ceil = 800.0
-#
-#     return shift_data
+def frame_shift(data, fs, shift_num):
+    assert shift_num >= 0, "shift_num ranges from 0 to 4"
+    assert shift_num <= 4, "shift_num ranges from 0 to 4"
+
+    default_frame_period = 5.0      # ms
+    shift_frame = fs * default_frame_period / 5 / 1000
+
+    # 0シフト = 末尾にfs*dfp分の0をつける
+    head_data = np.zeros(int(shift_frame) * shift_num)
+    end_data = np.zeros(int(shift_frame) * (5 - shift_num))
+
+    shift_data = np.append(head_data, data)
+    shift_data = np.append(shift_data, end_data)
+
+    return shift_data
 
 def main():
     AudioPath = "./data/RedDot/35/m0022/20150325233545661_m0022_35.wav"
     data, fs = utility.AudioRead(AudioPath)
 
-    time_stretch_output = time_stretch(data, 0.5)
-    utility.AudioWrite(time_stretch_output, fs, "time_stretch_output.wav")
+    # time_stretch_output = time_stretch(data, 0.5)
+    # utility.AudioWrite(time_stretch_output, fs, "time_stretch_output.wav")
+    #
+    # pitch_shift_output = pitch_shift_wsola(data, fs, 2)
+    # utility.AudioWrite(pitch_shift_output, fs, "pitch_shift_output.wav")
 
-    pitch_shift_output = pitch_shift_wsola(data, fs, 2)
-    utility.AudioWrite(pitch_shift_output, fs, "pitch_shift_output.wav")
+    data_0 = frame_shift(data, fs, shift_num=0)
+    data_1 = frame_shift(data, fs, shift_num=1)
+    data_2 = frame_shift(data, fs, shift_num=2)
+    data_3 = frame_shift(data, fs, shift_num=3)
+    data_4 = frame_shift(data, fs, shift_num=4)
+    utility.AudioWrite(data_0, fs, "frame_shift_output.wav")
 
 if __name__ == '__main__':
     main()
